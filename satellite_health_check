@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+################################################################
+#                                                              #
+#  Name:    satellite_health_check                             #
+#                                                              #
+#  Version: 1.0.0                                              #
+#  Created: 2025-03-24                                         #
+#  Last Update: 2025-05-15                                     #
+#  License: GPL - http://www.gnu.org/licenses                  #
+#  Copyright: (c)2025 René Koch                                #
+#  Author:  Rene Koch <rkoch@rk-it.at>                         #
+#  URL: https://github.com/rk-it-at/cmk_satellite_health_check #
+#                                                              #
+################################################################
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SATELLITE_MAINTAIN="/bin/satellite-maintain"
+CHECKS="services-up server-ping foreman-tasks-not-paused foreman-tasks-not-running"
+
+echo '<<<satellite_health_check:sep(59)>>>'
+for CHECK in ${CHECKS}; do
+  echo "n" | ${SATELLITE_MAINTAIN} health check --label=${CHECK} --plaintext 2>/dev/null | while read LINE; do
+    if [[ "${LINE}" =~ "OK" ]]; then
+      echo "${CHECK};ok"
+    elif [[ "${LINE}" =~ "FAIL" ]]; then
+      read NEXT_LINE
+      echo -ne "${CHECK};"
+      echo $NEXT_LINE | awk -F: '{ print $2 }' | sed 's/ //g'
+  fi
+  done
+done
